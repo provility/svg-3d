@@ -1,0 +1,20 @@
+{
+  "name": "svg-3d",
+  "version": "1.0.0",
+  "description": "![](demo.svg)",
+  "source": "demo/index.html",
+  "scripts": {
+    "dev": "parcel",
+    "build": "parcel build",
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "author": "",
+  "license": "ISC",
+  "devDependencies": {
+    "parcel": "^2.13.2",
+    "parcel-resolver-ignore": "^2.2.1"
+  },
+  "parcelIgnore": [
+    "^https://.*"
+  ]
+}

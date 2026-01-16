@@ -1,0 +1,162 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <title>SVG 3D Shapes</title>
+    <link rel="stylesheet" href="styles.css" />
+  </head>
+  <body>
+    <div class="controls">
+      <!-- Shape Selection -->
+      <div class="control-section">
+        <select id="shapeSelect">
+          <option value="cube">Cube</option>
+          <option value="box">Box</option>
+          <option value="cylinder">Cylinder</option>
+          <option value="cone">Cone</option>
+          <option value="prism">Prism</option>
+          <option value="pyramid">Pyramid</option>
+          <option value="frustum">Frustum</option>
+          <option value="extrusion">Extrusion</option>
+        </select>
+        <select id="projection">
+          <option value="perspective">Perspective</option>
+          <option value="orthographic">Orthographic</option>
+        </select>
+        <select id="coordSystem">
+          <option value="RHS">RHS (Y-up)</option>
+          <option value="LHS">LHS (Z-up)</option>
+        </select>
+      </div>
+
+      <!-- Object Rotation -->
+      <div class="control-section">
+        <span class="control-section-title">Object</span>
+        <div class="slider-group">
+          <label>X</label>
+          <input type="range" id="rotateX" min="0" max="360" value="0">
+          <span id="rotateXVal">0°</span>
+        </div>
+        <div class="slider-group">
+          <label>Y</label>
+          <input type="range" id="rotateY" min="0" max="360" value="0">
+          <span id="rotateYVal">0°</span>
+        </div>
+        <div class="slider-group">
+          <label>Z</label>
+          <input type="range" id="rotateZ" min="0" max="360" value="0">
+          <span id="rotateZVal">0°</span>
+        </div>
+      </div>
+
+      <!-- View Rotation -->
+      <div class="control-section">
+        <span class="control-section-title">View</span>
+        <div class="slider-group">
+          <label>X</label>
+          <input type="range" id="viewX" min="0" max="360" value="30">
+          <span id="viewXVal">30°</span>
+        </div>
+        <div class="slider-group">
+          <label>Y</label>
+          <input type="range" id="viewY" min="0" max="360" value="45">
+          <span id="viewYVal">45°</span>
+        </div>
+        <div class="slider-group">
+          <label>Z</label>
+          <input type="range" id="viewZ" min="0" max="360" value="0">
+          <span id="viewZVal">0°</span>
+        </div>
+        <button type="button" class="preset-btn" data-x="35" data-y="45" data-z="0">Iso</button>
+        <button type="button" class="preset-btn" data-x="0" data-y="0" data-z="0">Front</button>
+        <button type="button" class="preset-btn" data-x="90" data-y="0" data-z="0">Top</button>
+        <button type="button" class="preset-btn" data-x="0" data-y="90" data-z="0">Side</button>
+      </div>
+
+      <!-- Shape Parameters -->
+      <div class="control-section" id="segmentsGroup" style="display: none;">
+        <span id="segmentsLabel">Segments</span>
+        <input type="range" id="segments" min="3" max="64" value="16">
+        <span id="segmentsVal">16</span>
+      </div>
+
+      <div class="control-section" id="topRadiusGroup" style="display: none;">
+        <span>Top R</span>
+        <input type="range" id="topRadius" min="0" max="100" value="50">
+        <span id="topRadiusVal">0.5</span>
+      </div>
+
+      <div class="control-section" id="extrusionGroup" style="display: none;">
+        <span class="control-section-title">Profile</span>
+        <select id="profilePreset">
+          <option value="custom">Custom</option>
+          <option value="l-shape" selected>L-Shape</option>
+          <option value="t-shape">T-Shape</option>
+          <option value="triangle">Triangle</option>
+          <option value="semicircle">Half Circle</option>
+          <option value="arc-90">Arc 90°</option>
+          <option value="arc-270">Arc 270°</option>
+          <option value="rounded-rect">Rounded Rect</option>
+        </select>
+        <textarea id="profileInput" rows="3" style="width: 200px; font-family: monospace; font-size: 10px;">[[0,0], [1,0], [1,0.3], [0.3,0.3], [0.3,1], [0,1]]</textarea>
+        <div class="slider-group">
+          <label>Axis</label>
+          <select id="extrusionAxis">
+            <option value="x">X</option>
+            <option value="y" selected>Y</option>
+            <option value="z">Z</option>
+          </select>
+        </div>
+        <div class="slider-group">
+          <label>Length</label>
+          <input type="range" id="extrusionLength" min="10" max="300" value="200">
+          <span id="extrusionLengthVal">2.0</span>
+        </div>
+        <div class="slider-group" id="arcSegmentsGroup">
+          <label>Segments</label>
+          <input type="range" id="arcSegments" min="4" max="32" value="16">
+          <span id="arcSegmentsVal">16</span>
+        </div>
+      </div>
+
+      <div class="control-section" id="boxDimsGroup" style="display: none;">
+        <span class="control-section-title">Size</span>
+        <div class="slider-group" id="boxWidthGroup">
+          <label>W</label>
+          <input type="range" id="boxWidth" min="10" max="300" value="200">
+          <span id="boxWidthVal">2.0</span>
+        </div>
+        <div class="slider-group" id="boxHeightGroup">
+          <label>H</label>
+          <input type="range" id="boxHeight" min="10" max="300" value="200">
+          <span id="boxHeightVal">2.0</span>
+        </div>
+        <div class="slider-group" id="boxDepthGroup">
+          <label>D</label>
+          <input type="range" id="boxDepth" min="10" max="300" value="200">
+          <span id="boxDepthVal">2.0</span>
+        </div>
+      </div>
+
+      <!-- Display Options -->
+      <div class="control-section">
+        <span class="control-section-title">Show</span>
+        <div class="checkbox-group" id="fillGroup" style="display: none;">
+          <input type="checkbox" id="showFill"><label>Fill</label>
+        </div>
+        <div class="checkbox-group" id="rulingsGroup" style="display: none;">
+          <input type="checkbox" id="showRulings" checked><label>Rulings</label>
+        </div>
+        <div class="checkbox-group">
+          <input type="checkbox" id="showDimensions"><label>Dims</label>
+        </div>
+        <div class="checkbox-group">
+          <input type="checkbox" id="showAxes"><label>Axes</label>
+        </div>
+      </div>
+    </div>
+    <div id="container"></div>
+
+    <script type="module" src="main.js"></script>
+  </body>
+</html>

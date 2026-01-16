@@ -2,17 +2,353 @@
 <html lang="en">
   <head>
     <meta charset="utf-8" />
-    <title>SVG 3D</title>
-    <script src="index.js" type="module"></script>
-    <link rel="stylesheet" href="index.css" />
+    <title>SVG 3D Shapes</title>
+    <style>
+      body {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        min-height: 100vh;
+        margin: 0;
+        padding: 20px;
+        background: #f0f0f0;
+        font-family: sans-serif;
+      }
+      .controls {
+        display: flex;
+        flex-direction: column;
+        gap: 15px;
+        margin-bottom: 20px;
+      }
+      select {
+        padding: 10px 20px;
+        font-size: 16px;
+      }
+      .slider-group {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+      }
+      .slider-group label {
+        width: 80px;
+      }
+      .slider-group input[type="range"] {
+        width: 200px;
+      }
+      .preset-btn {
+        padding: 5px 10px;
+        margin-right: 5px;
+        cursor: pointer;
+      }
+      svg {
+        background: white;
+        box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+      }
+    </style>
   </head>
   <body>
-    <div id="canvasDiv"></div>
-    <div id="sceneDiv"></div>
-    <div id="infoDiv"></div>
-    <div>
-      A 3D in SVG demo made by <a href="https://hubelbauer.net">Tomas Hubelbauer</a>.
-      <a href="https://github.com/TomasHubelbauer/svg-3d">GitHub</a>
+    <div class="controls">
+      <select id="shapeSelect">
+        <option value="cube">Cube</option>
+        <option value="box">Box</option>
+        <option value="cylinder">Cylinder</option>
+        <option value="cone">Cone</option>
+        <option value="prism">Prism</option>
+        <option value="pyramid">Pyramid</option>
+        <option value="frustum">Frustum</option>
+      </select>
+      <div class="slider-group">
+        <label>Rotate X:</label>
+        <input type="range" id="rotateX" min="0" max="360" value="30">
+        <span id="rotateXVal">30°</span>
+      </div>
+      <div class="slider-group">
+        <label>Rotate Y:</label>
+        <input type="range" id="rotateY" min="0" max="360" value="45">
+        <span id="rotateYVal">45°</span>
+      </div>
+      <div class="slider-group">
+        <label>Rotate Z:</label>
+        <input type="range" id="rotateZ" min="0" max="360" value="0">
+        <span id="rotateZVal">0°</span>
+      </div>
+      <div class="slider-group">
+        <label>Projection:</label>
+        <select id="projection">
+          <option value="perspective">Perspective</option>
+          <option value="orthographic">Orthographic</option>
+        </select>
+      </div>
+      <div class="slider-group">
+        <label>Presets:</label>
+        <button type="button" class="preset-btn" data-x="35" data-y="45" data-z="0">Isometric</button>
+        <button type="button" class="preset-btn" data-x="0" data-y="0" data-z="0">Front</button>
+        <button type="button" class="preset-btn" data-x="90" data-y="0" data-z="0">Top</button>
+        <button type="button" class="preset-btn" data-x="0" data-y="90" data-z="0">Side</button>
+      </div>
+      <div class="slider-group" id="segmentsGroup" style="display: none;">
+        <label id="segmentsLabel">Segments:</label>
+        <input type="range" id="segments" min="3" max="64" value="16">
+        <span id="segmentsVal">16</span>
+      </div>
+      <div class="slider-group" id="topRadiusGroup" style="display: none;">
+        <label>Top Radius:</label>
+        <input type="range" id="topRadius" min="0" max="100" value="50">
+        <span id="topRadiusVal">0.5</span>
+      </div>
+      <div class="slider-group" id="boxWidthGroup" style="display: none;">
+        <label>Width:</label>
+        <input type="range" id="boxWidth" min="10" max="300" value="200">
+        <span id="boxWidthVal">2.0</span>
+      </div>
+      <div class="slider-group" id="boxHeightGroup" style="display: none;">
+        <label>Height:</label>
+        <input type="range" id="boxHeight" min="10" max="300" value="200">
+        <span id="boxHeightVal">2.0</span>
+      </div>
+      <div class="slider-group" id="boxDepthGroup" style="display: none;">
+        <label>Depth:</label>
+        <input type="range" id="boxDepth" min="10" max="300" value="200">
+        <span id="boxDepthVal">2.0</span>
+      </div>
+      <div class="slider-group" id="fillGroup" style="display: none;">
+        <label>Fill:</label>
+        <input type="checkbox" id="showFill">
+      </div>
+      <div class="slider-group" id="rulingsGroup" style="display: none;">
+        <label>Rulings:</label>
+        <input type="checkbox" id="showRulings" checked>
+      </div>
     </div>
+    <div id="container"></div>
+
+    <script type="module">
+      import { createCube } from './shapes/cube.js';
+      import { createBox } from './shapes/box.js';
+      import { createCylinder } from './shapes/cylinder.js';
+      import { createCone } from './shapes/cone.js';
+      import { createPrism } from './shapes/prism.js';
+      import { createPyramid } from './shapes/pyramid.js';
+      import { createFrustum } from './shapes/frustum.js';
+
+      const width = 400;
+      const height = 400;
+      const focalLength = 4;
+
+      function rotateX(point, angle) {
+        const [x, y, z] = point;
+        const cos = Math.cos(angle);
+        const sin = Math.sin(angle);
+        return [x, y * cos - z * sin, y * sin + z * cos];
+      }
+
+      function rotateY(point, angle) {
+        const [x, y, z] = point;
+        const cos = Math.cos(angle);
+        const sin = Math.sin(angle);
+        return [x * cos + z * sin, y, -x * sin + z * cos];
+      }
+
+      function rotateZ(point, angle) {
+        const [x, y, z] = point;
+        const cos = Math.cos(angle);
+        const sin = Math.sin(angle);
+        return [x * cos - y * sin, x * sin + y * cos, z];
+      }
+
+      function projectPerspective(point) {
+        const [x, y, z] = point;
+        const scale = focalLength / (focalLength + z);
+        return [
+          width / 2 + x * scale * 100,
+          height / 2 + y * scale * 100,
+        ];
+      }
+
+      function projectOrthographic(point) {
+        const [x, y, z] = point;
+        return [
+          width / 2 + x * 100,
+          height / 2 + y * 100,
+        ];
+      }
+
+      const container = document.getElementById('container');
+      const select = document.getElementById('shapeSelect');
+      const rotateXSlider = document.getElementById('rotateX');
+      const rotateYSlider = document.getElementById('rotateY');
+      const rotateZSlider = document.getElementById('rotateZ');
+      const rotateXVal = document.getElementById('rotateXVal');
+      const rotateYVal = document.getElementById('rotateYVal');
+      const rotateZVal = document.getElementById('rotateZVal');
+      const segmentsSlider = document.getElementById('segments');
+      const segmentsVal = document.getElementById('segmentsVal');
+      const segmentsGroup = document.getElementById('segmentsGroup');
+      const topRadiusSlider = document.getElementById('topRadius');
+      const topRadiusVal = document.getElementById('topRadiusVal');
+      const topRadiusGroup = document.getElementById('topRadiusGroup');
+      const boxWidthSlider = document.getElementById('boxWidth');
+      const boxWidthVal = document.getElementById('boxWidthVal');
+      const boxWidthGroup = document.getElementById('boxWidthGroup');
+      const boxHeightSlider = document.getElementById('boxHeight');
+      const boxHeightVal = document.getElementById('boxHeightVal');
+      const boxHeightGroup = document.getElementById('boxHeightGroup');
+      const boxDepthSlider = document.getElementById('boxDepth');
+      const boxDepthVal = document.getElementById('boxDepthVal');
+      const boxDepthGroup = document.getElementById('boxDepthGroup');
+      const showRulingsCheckbox = document.getElementById('showRulings');
+      const rulingsGroup = document.getElementById('rulingsGroup');
+      const showFillCheckbox = document.getElementById('showFill');
+      const fillGroup = document.getElementById('fillGroup');
+      const projectionSelect = document.getElementById('projection');
+      let svg, lines, polygons, capPolygons, shape;
+
+      function updateControlsVisibility() {
+        const shapeType = select.value;
+        const showExtra = shapeType === 'cylinder' || shapeType === 'cone' || shapeType === 'prism' || shapeType === 'pyramid' || shapeType === 'frustum';
+        const isBox = shapeType === 'box';
+
+        segmentsGroup.style.display = showExtra ? 'flex' : 'none';
+        rulingsGroup.style.display = showExtra ? 'flex' : 'none';
+        fillGroup.style.display = showExtra ? 'flex' : 'none';
+        topRadiusGroup.style.display = shapeType === 'frustum' ? 'flex' : 'none';
+        boxWidthGroup.style.display = isBox ? 'flex' : 'none';
+        boxHeightGroup.style.display = isBox ? 'flex' : 'none';
+        boxDepthGroup.style.display = isBox ? 'flex' : 'none';
+
+        // Update label and default value based on shape type
+        const segmentsLabel = document.getElementById('segmentsLabel');
+        if (shapeType === 'prism' || shapeType === 'pyramid') {
+          segmentsLabel.textContent = 'Sides:';
+          if (parseInt(segmentsSlider.value) > 8) {
+            segmentsSlider.value = shapeType === 'pyramid' ? 4 : 6;
+          }
+        } else {
+          segmentsLabel.textContent = 'Segments:';
+        }
+      }
+
+      function buildShape() {
+        if (svg) svg.remove();
+        updateControlsVisibility();
+
+        svg = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
+        svg.setAttribute('width', width);
+        svg.setAttribute('height', height);
+        container.appendChild(svg);
+
+        const shapeType = select.value;
+        const segments = parseInt(segmentsSlider.value);
+        const showRulings = showRulingsCheckbox.checked;
+        const showFill = showFillCheckbox.checked;
+        const topRadius = topRadiusSlider.value / 100;
+        const boxW = boxWidthSlider.value / 100;
+        const boxH = boxHeightSlider.value / 100;
+        const boxD = boxDepthSlider.value / 100;
+        segmentsVal.textContent = segments;
+        topRadiusVal.textContent = topRadius.toFixed(2);
+        boxWidthVal.textContent = boxW.toFixed(1);
+        boxHeightVal.textContent = boxH.toFixed(1);
+        boxDepthVal.textContent = boxD.toFixed(1);
+
+        if (shapeType === 'cube') shape = createCube();
+        else if (shapeType === 'box') shape = createBox(boxW, boxH, boxD);
+        else if (shapeType === 'cylinder') shape = createCylinder(segments, showRulings, showFill);
+        else if (shapeType === 'cone') shape = createCone(segments, showRulings, showFill);
+        else if (shapeType === 'prism') shape = createPrism(segments, showRulings, showFill);
+        else if (shapeType === 'pyramid') shape = createPyramid(segments, showRulings, showFill);
+        else if (shapeType === 'frustum') shape = createFrustum(segments, topRadius, 1, showRulings, showFill);
+
+        shape.faces = shape.faces || [];
+        shape.capFaces = shape.capFaces || [];
+
+        // Side faces (lighter) - render first
+        polygons = shape.faces.map(() => {
+          const polygon = document.createElementNS('http://www.w3.org/2000/svg', 'polygon');
+          polygon.setAttribute('fill', '#ddd');
+          polygon.setAttribute('stroke', 'none');
+          svg.appendChild(polygon);
+          return polygon;
+        });
+
+        // Cap faces (darker) - render on top
+        capPolygons = shape.capFaces.map(() => {
+          const polygon = document.createElementNS('http://www.w3.org/2000/svg', 'polygon');
+          polygon.setAttribute('fill', '#aaa');
+          polygon.setAttribute('stroke', 'none');
+          svg.appendChild(polygon);
+          return polygon;
+        });
+
+        lines = shape.edges.map(() => {
+          const line = document.createElementNS('http://www.w3.org/2000/svg', 'line');
+          line.setAttribute('stroke', 'black');
+          line.setAttribute('stroke-width', '2');
+          svg.appendChild(line);
+          return line;
+        });
+
+        render();
+      }
+
+      function render() {
+        const angleX = (rotateXSlider.value * Math.PI) / 180;
+        const angleY = (rotateYSlider.value * Math.PI) / 180;
+        const angleZ = (rotateZSlider.value * Math.PI) / 180;
+
+        rotateXVal.textContent = rotateXSlider.value + '°';
+        rotateYVal.textContent = rotateYSlider.value + '°';
+        rotateZVal.textContent = rotateZSlider.value + '°';
+
+        const rotated = shape.vertices.map(v =>
+          rotateZ(rotateY(rotateX(v, angleX), angleY), angleZ)
+        );
+        const project = projectionSelect.value === 'perspective' ? projectPerspective : projectOrthographic;
+        const projected = rotated.map(project);
+
+        shape.capFaces.forEach((face, idx) => {
+          const points = face.map(i => projected[i].join(',')).join(' ');
+          capPolygons[idx].setAttribute('points', points);
+        });
+
+        shape.faces.forEach((face, idx) => {
+          const points = face.map(i => projected[i].join(',')).join(' ');
+          polygons[idx].setAttribute('points', points);
+        });
+
+        shape.edges.forEach(([i, j], idx) => {
+          const [x1, y1] = projected[i];
+          const [x2, y2] = projected[j];
+          lines[idx].setAttribute('x1', x1);
+          lines[idx].setAttribute('y1', y1);
+          lines[idx].setAttribute('x2', x2);
+          lines[idx].setAttribute('y2', y2);
+        });
+      }
+
+      select.addEventListener('change', buildShape);
+      rotateXSlider.addEventListener('input', render);
+      rotateYSlider.addEventListener('input', render);
+      rotateZSlider.addEventListener('input', render);
+      segmentsSlider.addEventListener('input', buildShape);
+      topRadiusSlider.addEventListener('input', buildShape);
+      boxWidthSlider.addEventListener('input', buildShape);
+      boxHeightSlider.addEventListener('input', buildShape);
+      boxDepthSlider.addEventListener('input', buildShape);
+      showRulingsCheckbox.addEventListener('change', buildShape);
+      showFillCheckbox.addEventListener('change', buildShape);
+      projectionSelect.addEventListener('change', render);
+
+      document.querySelectorAll('.preset-btn').forEach(btn => {
+        btn.addEventListener('click', () => {
+          rotateXSlider.value = btn.dataset.x;
+          rotateYSlider.value = btn.dataset.y;
+          rotateZSlider.value = btn.dataset.z;
+          render();
+        });
+      });
+
+      buildShape();
+    </script>
   </body>
 </html>
